@@ -1,0 +1,10 @@
+# 1. Rimuovi le cartelle messe fuori posto
+Remove-Item -Recurse -Force component, dto, service
+
+# 2. Entra dentro src/app
+cd src/app
+
+# 3. Creale correttamente all'interno di app
+mkdir component
+mkdir dto
+mkdir service
