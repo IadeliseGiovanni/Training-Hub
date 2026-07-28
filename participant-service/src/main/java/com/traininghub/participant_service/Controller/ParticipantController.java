@@ -11,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/participants")
+@CrossOrigin(origins = "http://localhost:4200") // <-- AGGIUNTO QUI
 public class ParticipantController {
 
     private final ParticipantService participantService;
