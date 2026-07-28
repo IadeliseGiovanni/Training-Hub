@@ -9,7 +9,10 @@ import com.traininghub.identity_service.Mapper.UserMapper;
 import com.traininghub.identity_service.Model.User;
 import com.traininghub.identity_service.Repository.UserRepository;
 import com.traininghub.identity_service.Security.JwtService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,55 +20,63 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-    private final UserMapper userMapper;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public UserResponseDto createUser(UserRequestDto requestDto) {
-        if (userRepository.existsByUsername(requestDto.getUsername())) {
-            throw new RuntimeException("Username già in uso");
-        }
-        if (userRepository.existsByEmail(requestDto.getEmail())) {
-            throw new RuntimeException("Email già in uso");
-        }
+        User user = new User();
+        user.setUsername(requestDto.getUsername());
+        user.setEmail(requestDto.getEmail());
+        user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
+        user.setRole(requestDto.getRole());
 
-        // Cifriamo la password prima di mappare e salvare
-        requestDto.setPassword(passwordEncoder.encode(requestDto.getPassword()));
-
-        User user = userMapper.toEntity(requestDto);
         User savedUser = userRepository.save(user);
-
         return userMapper.toResponseDTO(savedUser);
     }
 
     @Override
     public AuthResponseDto login(LoginRequestDto loginDto) {
-        // Cerchiamo l'utente sia per username che per email
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        loginDto.getUsernameOrEmail(),
+                        loginDto.getPassword()
+                )
+        );
+
         User user = userRepository.findByUsername(loginDto.getUsernameOrEmail())
                 .orElseGet(() -> userRepository.findByEmail(loginDto.getUsernameOrEmail())
-                        .orElseThrow(() -> new ResourceNotFoundException("Credenziali non valide")));
+                        .orElseThrow(() -> new RuntimeException("Utente non trovato")));
 
-        // Verifichiamo la password inserita con quella cifrata nel DB
-        if (!passwordEncoder.matches(loginDto.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Credenziali non valide");
-        }
+        String token = jwtService.generateJwtToken(authentication);
 
-        // Generiamo il token JWT
-        String token = jwtService.generateToken(user.getUsername(), user.getRole());
+        AuthResponseDto response = new AuthResponseDto();
+        response.setToken(token);
+        response.setTokenType("Bearer");
+        response.setUsername(user.getUsername());
+        response.setRole(user.getRole());
 
-        return new AuthResponseDto(token);
+        return response;
     }
 
     @Override
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Utente non trovato con id: " + id));
-
         return userMapper.toResponseDTO(user);
     }
 
@@ -78,29 +89,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDto updateUser(Long id, UserRequestDto requestDto) {
-        User existingUser = userRepository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Utente non trovato con id: " + id));
 
-        existingUser.setUsername(requestDto.getUsername());
-        existingUser.setEmail(requestDto.getEmail());
-
-        // Cifriamo la nuova password se è stata fornita
-        if (requestDto.getPassword() != null && !requestDto.getPassword().isBlank()) {
-            existingUser.setPassword(passwordEncoder.encode(requestDto.getPassword()));
+        user.setUsername(requestDto.getUsername());
+        user.setEmail(requestDto.getEmail());
+        if (requestDto.getPassword() != null && !requestDto.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(requestDto.getPassword()));
         }
+        user.setRole(requestDto.getRole());
 
-        existingUser.setRole(requestDto.getRole());
-
-        User updatedUser = userRepository.save(existingUser);
-
+        User updatedUser = userRepository.save(user);
         return userMapper.toResponseDTO(updatedUser);
     }
 
     @Override
     public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Utente non trovato con id: " + id);
-        }
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Utente non trovato con id: " + id));
+        userRepository.delete(user);
     }
 }
