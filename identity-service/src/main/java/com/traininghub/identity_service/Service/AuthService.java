@@ -25,7 +25,10 @@ public class AuthService {
     private JwtService jwtService;
 
     public AuthResponseDto authenticateUser(LoginRequestDto loginRequest) {
-        // 1. Esegue l'autenticazione tramite Spring Security
+        // TRACCIA DI DEBUG
+        System.out.println("--> METODO AUTHENTICATE RICEVUTO! Username/Email: " +
+                (loginRequest != null ? loginRequest.getUsernameOrEmail() : "NULL"));
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsernameOrEmail(),
@@ -35,17 +38,14 @@ public class AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // 2. Genera il token JWT usando JwtService
         String jwt = jwtService.generateJwtToken(authentication);
 
-        // 3. Recupera l'utente dal database tramite username
         User user = userRepository.findByUsername(loginRequest.getUsernameOrEmail())
-                .orElseThrow(() -> new RuntimeException("Utente non trovato"));
+                .orElseGet(() -> userRepository.findByEmail(loginRequest.getUsernameOrEmail())
+                        .orElseThrow(() -> new RuntimeException("Utente non trovato")));
 
-        // 4. Prende direttamente il ruolo salvato nel campo stringa dell'utente
         String role = user.getRole() != null ? user.getRole() : "USER";
 
-        // 5. Restituisce il DTO con token, username e ruolo per il frontend
         AuthResponseDto response = new AuthResponseDto();
         response.setToken(jwt);
         response.setTokenType("Bearer");
