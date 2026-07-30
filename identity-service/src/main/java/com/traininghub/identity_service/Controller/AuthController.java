@@ -27,7 +27,6 @@ public class AuthController {
             AuthResponseDto response = authService.authenticateUser(requestDto);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            // Stampa l'errore esatto nel terminale Java per capire la causa del 403
             e.printStackTrace();
             return ResponseEntity.status(401).body("Errore di autenticazione: " + e.getMessage());
         }
