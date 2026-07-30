@@ -1,7 +1,3 @@
-Esattamente, basta aggiungere una sezione dedicata all'avvio nel file README.md.
-
-Ecco la versione aggiornata e completa del testo, pronta da copiare e incollare nel tuo README.md, con tutte le istruzioni sui database e l'ordine di avvio:
-
 🎓 Training-Hub (Backend Architecture)
 Training-Hub è il backend a microservizi sviluppato per la gestione completa di una piattaforma di formazione e percorsi didattici. Il progetto implementa un'architettura distribuita basata su Java e Spring Boot.
 
