@@ -36,11 +36,42 @@ Training-Hub/
 └── participant-service/  # Microservizio Gestione Partecipanti
 
 
-### 4. Avvio del Frontend (Angular)
-1. Apri un terminale nella cartella del progetto frontend di Angular.
-2. Installa le dipendenze (se non già fatto):
-   ```bash
-   npm install
+⚙️ Guida all'Avvio in Locale
+Essendo un'architettura a microservizi, non è richiesto alcun deploy online: puoi eseguire l'intera piattaforma direttamente sulla tua macchina in locale seguendo questi passaggi.
 
-Avvia l'applicazione in modalità di sviluppo:
+1. Prerequisiti
+Assicurati di avere installato sulla tua macchina:
+
+Java (JDK)
+
+Node.js e Angular CLI (per il frontend)
+
+MySQL Server attivo
+
+2. Configurazione dei Database
+Crea i database necessari su MySQL (le applicazioni sono configurate per crearli o aggiornarli automaticamente tramite Hibernate, ma è consigliabile averli predisposti):
+
+training_hub_courses (per il course-service)
+
+Database relativi agli altri microservizi secondo le rispettive configurazioni nei file application.properties
+
+3. Avvio dei Microservizi Backend
+Apri i singoli progetti dei microservizi nella tua IDE (es. IntelliJ IDEA) e avvia le classi principali Spring Boot nell'ordine logico consigliato.
+(Nota: L'Identity Service deve essere tassativamente avviato per primo o comunque prima di tentare il login, poiché gestisce l'autenticazione e i token per accedere al resto della piattaforma).
+
+Identity Service (porta 8083) - Indispensabile per effettuare il login
+
+Course Service (porta 8082)
+
+Participant Service (porta 8081)
+
+Enrollment Service
+
+4. Avvio del Frontend (Angular)
+Apri un terminale nella cartella del progetto frontend di Angular.
+
+Installa le dipendenze (se non già fatto):
+npm install
+
+Avvio dell'applicazione :
 ng serve
